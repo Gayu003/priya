@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Management App</title>
+  <style>
+    /* Lavender color and time chart background */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      background-color: lavender;
+      background-image: linear-gradient(rgba(230, 230, 250, 0.8), rgba(230, 230, 250, 0.8)), 
+                        url('data:image/svg+xml,%3Csvg width="100%25" height="100%25" xmlns="http://www.w3.org/2000/svg"%3E%3Crect width="100%25" height="100%25" fill="%23e6e6fa"%3E%3C/rect%3E%3Cg stroke="%23b4a7d6" stroke-width="2" stroke-opacity="0.7"%3E%3Cline x1="0" y1="10%25" x2="100%25" y2="10%25" /%3E%3Cline x1="0" y1="20%25" x2="100%25" y2="20%25" /%3E%3Cline x1="0" y1="30%25" x2="100%25" y2="30%25" /%3E%3Cline x1="0" y1="40%25" x2="100%25" y2="40%25" /%3E%3Cline x1="0" y1="50%25" x2="100%25" y2="50%25" /%3E%3Cline x1="0" y1="60%25" x2="100%25" y2="60%25" /%3E%3Cline x1="0" y1="70%25" x2="100%25" y2="70%25" /%3E%3Cline x1="0" y1="80%25" x2="100%25" y2="80%25" /%3E%3Cline x1="0" y1="90%25" x2="100%25" y2="90%25" /%3E%3C/g%3E%3C/svg%3E');
+      background-size: cover;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Styling for the Login Container and Task Manager */
+    .login-container, .task-manager {
+      text-align: center;
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    input, select, button {
+      margin: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      width: 80%;
+    }
+
+    button {
+      background-color: #b19cd9;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #a384d6;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    .task {
+      background-color: #fff;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 5px;
+      border-left: 5px solid;
+    }
+
+    .task.Low { border-color: green; }
+    .task.Medium { border-color: orange; }
+    .task.High { border-color: red; }
+
+    .overdue { background-color: #f8d7da; }
+    .completed { text-decoration: line-through; color: gray; }
+  </style>
+</head>
+<body>
+
+  <!-- Login Container -->
+  <div class="login-container" id="login-container">
+    <h2>Login</h2>
+    <input type="text" id="username" placeholder="Enter your username" required>
+    <button id="login-btn">Login</button>
+  </div>
+
+  <!-- Task Manager -->
+  <div class="task-manager" id="task-manager" style="display: none;">
+    <h2>Welcome, <span id="user"></span>!</h2>
+    <button id="logout-btn">Logout</button>
+    <h3>Create New Task</h3>
+    <input type="text" id="task-title" placeholder="Task Title" required>
+    <input type="date" id="task-dueDate" required>
+    <select id="task-priority">
+      <option value="Low">Low</option>
+      <option value="Medium">Medium</option>
+      <option value="High">High</option>
+    </select>
+    <input type="text" id="task-category" placeholder="Category (e.g., Work, Personal)" required>
+    <button id="add-task-btn">Add Task</button>
+
+    <h3>Your Tasks</h3>
+    <ul id="task-list"></ul>
+  </div>
+
+  <script>
+    // Simulated User Login
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const taskManager = document.getElementById('task-manager');
+    const loginContainer = document.getElementById('login-container');
+    const userSpan = document.getElementById('user');
+    const usernameInput = document.getElementById('username');
+
+    loginBtn.addEventListener('click', () => {
+      const username = usernameInput.value || "JohnDoe";  // Default username if not entered
+      if (username) {
+        localStorage.setItem('username', username);
+        showTaskManager();
+      }
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('username');
+      location.reload();
+    });
+
+    function showTaskManager() {
+      const username = localStorage.getItem('username');
+      if (username) {
+        userSpan.textContent = username;
+        loginContainer.style.display = 'none';
+        taskManager.style.display = 'block';
+        loadTasks();
+        checkOverdueTasks();
+      }
+    }
+
+    if (localStorage.getItem('username')) {
+      showTaskManager();
+    }
+
+    // Task Management
+    const taskList = document.getElementById('task-list');
+    const addTaskBtn = document.getElementById('add-task-btn');
+    const taskTitleInput = document.getElementById('task-title');
+    const taskDueDateInput = document.getElementById('task-dueDate');
+    const taskPrioritySelect = document.getElementById('task-priority');
+    const taskCategoryInput = document.getElementById('task-category');
+
+    addTaskBtn.addEventListener('click', () => {
+      const title = taskTitleInput.value;
+      const dueDate = taskDueDateInput.value;
+      const priority = taskPrioritySelect.value;
+      const category = taskCategoryInput.value;
+
+      if (title && dueDate && priority && category) {
+        const task = {
+          id: Date.now(),
+          title,
+          dueDate,
+          priority,
+          category,
+          completed: false
+        };
+        saveTask(task);
+        loadTasks();
+      }
+    });
+
+    function saveTask(task) {
+      const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+      tasks.push(task);
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function loadTasks() {
+      taskList.innerHTML = '';
+      const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+      tasks.forEach(task => {
+        const taskItem = document.createElement('li');
+        taskItem.classList.add('task', task.priority);
+        taskItem.innerHTML = `
+          <strong>${task.title}</strong> (Due: ${task.dueDate}, Category: ${task.category})
+          <button onclick="completeTask(${task.id})">Complete</button>
+          <button onclick="deleteTask(${task.id})">Delete</button>
+        `;
+        if (task.completed) {
+          taskItem.classList.add('completed');
+        }
+        taskList.appendChild(taskItem);
+      });
+    }
+
+    function completeTask(id) {
+      let tasks = JSON.parse(localStorage.getItem('tasks'));
+      tasks = tasks.map(task => task.id === id ? { ...task, completed: true } : task);
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      loadTasks();
+    }
+
+    function deleteTask(id) {
+      let tasks = JSON.parse(localStorage.getItem('tasks'));
+      tasks = tasks.filter(task => task.id !== id);
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      loadTasks();
+    }
+
+    // Overdue Task Notification
+    function checkOverdueTasks() {
+      const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+      const currentDate = new Date();
+      
+      tasks.forEach(task => {
+        const taskDueDate = new Date(task.dueDate);
+        if (taskDueDate < currentDate && !task.completed) {
+          alert('Task "${task.title}" is overdue!');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
